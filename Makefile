@@ -3,3 +3,6 @@ run:
 
 build:
 	@go build -o main $(GO_ARGS) ./cmd/comet $(APP_ARGS)
+
+test:
+	@go test $(GO_ARGS) ./...

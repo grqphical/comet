@@ -11,15 +11,37 @@ import (
 )
 
 func handleRequest(w http.ResponseWriter, r *http.Request) {
-	url, err := url.JoinPath(config.Backends[0].Address, r.URL.RequestURI())
-	if err != nil {
-		fmt.Println("ERROR: invalid URL for backend")
+	var URL string
+
+	for _, backend := range config.Backends {
+		if backend.Address == "" {
+			continue
+		}
+
+		if matchRoute(backend.RouteFilter, r.URL.RequestURI()) {
+			route, err := removeFilterPrefix(backend.RouteFilter, r.URL.RequestURI())
+			if err != nil {
+				fmt.Println("ERROR: invalid route filter")
+				return
+			}
+
+			URL, err = url.JoinPath(backend.Address, route)
+			if err != nil {
+				fmt.Println("ERROR: invalid route filter")
+				return
+			}
+		}
+	}
+
+	// no URL matched the request
+	if URL == "" {
+		http.Error(w, "NOT FOUND", http.StatusNotFound)
 		return
 	}
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(URL)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Unable to access backend server", http.StatusInternalServerError)
 		return
 	}
 	defer resp.Body.Close()

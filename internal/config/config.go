@@ -9,6 +9,7 @@ import (
 type Backend struct {
 	Address        string `mapstructure:"address"`
 	HealthEndpoint string `mapstructure:"health_endpoint"`
+	RouteFilter    string `mapstructure:"route_filter"`
 }
 
 var Backends []Backend
