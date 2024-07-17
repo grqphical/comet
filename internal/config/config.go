@@ -26,7 +26,7 @@ func ReadConfig() error {
 		}
 	}
 
-	err = viper.UnmarshalKey("backends", &Backends)
+	err = viper.UnmarshalKey("backend", &Backends)
 	if err != nil {
 		return err
 	}
