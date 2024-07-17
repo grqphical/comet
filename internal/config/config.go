@@ -7,10 +7,15 @@ import (
 )
 
 type Backend struct {
+	Type        string `mapstructure:"type"`
+	RouteFilter string `mapstructure:"route_filter"`
+	StripFilter bool   `mapstructure:"strip_filter"`
+	// These fields should only be populated if the type is "proxy"
 	Address        string `mapstructure:"address"`
 	HealthEndpoint string `mapstructure:"health_endpoint"`
-	RouteFilter    string `mapstructure:"route_filter"`
-	StripFilter    bool   `mapstructure:"strip_filter"`
+	// These fields should only be populated if the type is "staticfs"
+	Directory         string `mapstructure:"directory"`
+	ShowDirectoryMenu bool   `mapstructure:"show_directory_menu"`
 }
 
 var Backends []Backend

@@ -3,7 +3,7 @@ package main
 import (
 	"comet/internal/config"
 	"comet/internal/logging"
-	"comet/internal/proxy"
+	"comet/internal/server"
 )
 
 func main() {
@@ -12,9 +12,9 @@ func main() {
 		logging.LogCritical(err.Error())
 	}
 
-	p := proxy.NewProxy()
+	p := server.NewServer()
 
-	err = p.StartProxy()
+	err = p.StartServer()
 	if err != nil {
 		logging.LogCritical(err.Error())
 	}

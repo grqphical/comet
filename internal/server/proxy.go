@@ -1,4 +1,4 @@
-package proxy
+package server
 
 import (
 	"comet/internal/config"
@@ -13,35 +13,34 @@ import (
 )
 
 type Proxy struct {
-	backendStatus map[string]bool
-	mu            sync.Mutex
+	serverStatuses map[string]bool
+	backend        *config.Backend
+	mu             sync.Mutex
 }
 
-func NewProxy() Proxy {
+func newProxy(backend *config.Backend) *Proxy {
 	var serversStatus = make(map[string]bool)
 
-	for _, backend := range config.Backends {
-		url, err := url.JoinPath(backend.Address, backend.HealthEndpoint)
-		if err != nil {
-			logging.LogCritical("invalid address or health endpoint")
-		}
-		_, err = http.Get(url)
+	url, err := url.JoinPath(backend.Address, backend.HealthEndpoint)
+	if err != nil {
+		logging.LogCritical("invalid address or health endpoint")
+	}
+	_, err = http.Get(url)
 
-		if err == nil {
-			serversStatus[backend.Address] = true
-		} else {
-			serversStatus[backend.Address] = false
-			logging.Logger.Warn("server offline", "address", backend.Address)
-		}
-
+	if err == nil {
+		serversStatus[backend.Address] = true
+	} else {
+		serversStatus[backend.Address] = false
+		logging.Logger.Warn("server offline", "address", backend.Address)
 	}
 
-	return Proxy{
-		backendStatus: serversStatus,
+	return &Proxy{
+		serverStatuses: serversStatus,
+		backend:        backend,
 	}
 }
 
-func (p *Proxy) handleRequest(w http.ResponseWriter, r *http.Request) {
+func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	var URL string
 
@@ -52,7 +51,7 @@ func (p *Proxy) handleRequest(w http.ResponseWriter, r *http.Request) {
 		}
 
 		p.mu.Lock()
-		if !p.backendStatus[backend.Address] {
+		if !p.serverStatuses[backend.Address] {
 			p.mu.Unlock()
 			http.Error(w, "backend not avaliable", http.StatusServiceUnavailable)
 			return
@@ -111,40 +110,30 @@ func (p *Proxy) handleRequest(w http.ResponseWriter, r *http.Request) {
 	responseTime := time.Since(startTime)
 
 	if viper.GetBool("log_requests") {
-		logging.Logger.Info("", "method", r.Method, "status", resp.StatusCode, "route", r.RequestURI, "ip", r.RemoteAddr, "responseTime", responseTime.Microseconds())
+		logging.Logger.Info("proxy", "method", r.Method, "status", resp.StatusCode, "route", r.RequestURI, "ip", r.RemoteAddr, "responseTime", responseTime.Microseconds())
 	}
 
 }
 
-func (p *Proxy) checkHealth() {
+func (p *Proxy) RouteFilter() string {
+	return p.backend.RouteFilter
+}
+
+func (p *Proxy) CheckHealth() {
 	p.mu.Lock()
-	for _, backend := range config.Backends {
-		url, err := url.JoinPath(backend.Address, backend.HealthEndpoint)
-		if err != nil {
-			logging.LogCritical("invalid address or health endpoint")
-		}
-		_, err = http.Get(url)
 
-		if err == nil {
-			p.backendStatus[backend.Address] = true
-		} else {
-			p.backendStatus[backend.Address] = false
-			logging.Logger.Warn("server offline", "address", backend.Address)
-		}
-
+	url, err := url.JoinPath(p.backend.Address, p.backend.HealthEndpoint)
+	if err != nil {
+		logging.LogCritical("invalid backend address/health endpoint")
 	}
+	_, err = http.Get(url)
+
+	if err == nil {
+		p.serverStatuses[p.backend.Address] = true
+	} else {
+		p.serverStatuses[p.backend.Address] = false
+		logging.Logger.Warn("server offline", "address", p.backend.Address)
+	}
+
 	p.mu.Unlock()
-}
-
-func (p *Proxy) StartProxy() error {
-	http.HandleFunc("/", p.handleRequest)
-
-	go func() {
-		ticker := time.NewTicker(time.Second * 15)
-		for range ticker.C {
-			p.checkHealth()
-		}
-	}()
-
-	return http.ListenAndServe(viper.GetString("proxy_address"), nil)
 }
