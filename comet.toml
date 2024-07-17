@@ -1,0 +1,18 @@
+proxy_addr = "127.0.0.1:5000"
+
+[[backend]]
+addr = "127.0.0.1:8000"
+health_endpoint = "/health"
+
+[ip_filter]
+whitelist = ["127.0.0.1"]
+blacklist = ["1.2.3.4"]
+
+[logging]
+level = "info"
+output = "stderr"
+
+[cors]
+allowed_origins = ["*"]
+allowed_methods = ["GET", "POST", "PUT"]
+allowed_headers = ["Content-Type", "Authorization"]
