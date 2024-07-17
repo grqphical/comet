@@ -31,6 +31,7 @@ func NewProxy() Proxy {
 			serversStatus[backend.Address] = true
 		} else {
 			serversStatus[backend.Address] = false
+			logging.Logger.Warn("server offline", "address", backend.Address)
 		}
 
 	}
@@ -115,8 +116,35 @@ func (p *Proxy) handleRequest(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (p *Proxy) checkHealth() {
+	p.mu.Lock()
+	for _, backend := range config.Backends {
+		url, err := url.JoinPath(backend.Address, backend.HealthEndpoint)
+		if err != nil {
+			logging.LogCritical("invalid address or health endpoint")
+		}
+		_, err = http.Get(url)
+
+		if err == nil {
+			p.backendStatus[backend.Address] = true
+		} else {
+			p.backendStatus[backend.Address] = false
+			logging.Logger.Warn("server offline", "address", backend.Address)
+		}
+
+	}
+	p.mu.Unlock()
+}
+
 func (p *Proxy) StartProxy() error {
 	http.HandleFunc("/", p.handleRequest)
+
+	go func() {
+		ticker := time.NewTicker(time.Second * 15)
+		for range ticker.C {
+			p.checkHealth()
+		}
+	}()
 
 	return http.ListenAndServe(viper.GetString("proxy_address"), nil)
 }
