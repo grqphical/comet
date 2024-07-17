@@ -2,31 +2,70 @@ package proxy
 
 import (
 	"comet/internal/config"
-	"fmt"
+	"comet/internal/logging"
 	"io"
 	"net/http"
 	"net/url"
+	"sync"
+	"time"
 
 	"github.com/spf13/viper"
 )
 
-func handleRequest(w http.ResponseWriter, r *http.Request) {
+type Proxy struct {
+	backendStatus map[string]bool
+	mu            sync.Mutex
+}
+
+func NewProxy() Proxy {
+	var serversStatus = make(map[string]bool)
+
+	for _, backend := range config.Backends {
+		url, err := url.JoinPath(backend.Address, backend.HealthEndpoint)
+		if err != nil {
+			logging.LogCritical("invalid address or health endpoint")
+		}
+		_, err = http.Get(url)
+
+		if err == nil {
+			serversStatus[backend.Address] = true
+		} else {
+			serversStatus[backend.Address] = false
+		}
+
+	}
+
+	return Proxy{
+		backendStatus: serversStatus,
+	}
+}
+
+func (p *Proxy) handleRequest(w http.ResponseWriter, r *http.Request) {
+	startTime := time.Now()
 	var URL string
 
 	for _, backend := range config.Backends {
 		if backend.Address == "" {
+			logging.Logger.Warn("backend has no configured address")
 			continue
 		}
+
+		p.mu.Lock()
+		if !p.backendStatus[backend.Address] {
+			p.mu.Unlock()
+			http.Error(w, "backend not avaliable", http.StatusServiceUnavailable)
+			return
+		}
+		p.mu.Unlock()
 
 		if matchRoute(backend.RouteFilter, r.URL.RequestURI()) {
 			var route string
 			var err error
 
-			if backend.StripPrefix {
+			if backend.StripFilter {
 				route, err = removeFilterPrefix(backend.RouteFilter, r.URL.RequestURI())
 				if err != nil {
-					fmt.Println("ERROR: invalid route filter")
-					return
+					logging.LogCritical("invalid URL filter")
 				}
 			} else {
 				route = r.URL.RequestURI()
@@ -34,8 +73,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 
 			URL, err = url.JoinPath(backend.Address, route)
 			if err != nil {
-				fmt.Println("ERROR: invalid route filter")
-				return
+				logging.LogCritical("invalid URL filter")
 			}
 		}
 	}
@@ -69,11 +107,16 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unable to send response data", http.StatusInternalServerError)
 		return
 	}
+	responseTime := time.Since(startTime)
+
+	if viper.GetBool("log_requests") {
+		logging.Logger.Info("", "method", r.Method, "status", resp.StatusCode, "route", r.RequestURI, "ip", r.RemoteAddr, "responseTime", responseTime.Microseconds())
+	}
 
 }
 
-func StartProxy() error {
-	http.HandleFunc("/", handleRequest)
+func (p *Proxy) StartProxy() error {
+	http.HandleFunc("/", p.handleRequest)
 
 	return http.ListenAndServe(viper.GetString("proxy_address"), nil)
 }

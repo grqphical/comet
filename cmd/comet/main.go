@@ -2,24 +2,20 @@ package main
 
 import (
 	"comet/internal/config"
+	"comet/internal/logging"
 	"comet/internal/proxy"
-	"fmt"
-	"os"
 )
-
-func LogError(err error) {
-	fmt.Printf("ERROR: %s\n", err)
-	os.Exit(1)
-}
 
 func main() {
 	err := config.ReadConfig()
 	if err != nil {
-		LogError(err)
+		logging.LogCritical(err.Error())
 	}
 
-	err = proxy.StartProxy()
+	p := proxy.NewProxy()
+
+	err = p.StartProxy()
 	if err != nil {
-		LogError(err)
+		logging.LogCritical(err.Error())
 	}
 }
