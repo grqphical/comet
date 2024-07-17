@@ -10,6 +10,7 @@ type Backend struct {
 	Address        string `mapstructure:"address"`
 	HealthEndpoint string `mapstructure:"health_endpoint"`
 	RouteFilter    string `mapstructure:"route_filter"`
+	StripPrefix    bool   `mapstructure:"strip_prefix"`
 }
 
 var Backends []Backend

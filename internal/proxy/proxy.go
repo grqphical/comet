@@ -19,10 +19,17 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if matchRoute(backend.RouteFilter, r.URL.RequestURI()) {
-			route, err := removeFilterPrefix(backend.RouteFilter, r.URL.RequestURI())
-			if err != nil {
-				fmt.Println("ERROR: invalid route filter")
-				return
+			var route string
+			var err error
+
+			if backend.StripPrefix {
+				route, err = removeFilterPrefix(backend.RouteFilter, r.URL.RequestURI())
+				if err != nil {
+					fmt.Println("ERROR: invalid route filter")
+					return
+				}
+			} else {
+				route = r.URL.RequestURI()
 			}
 
 			URL, err = url.JoinPath(backend.Address, route)
