@@ -2,6 +2,7 @@ package main
 
 import (
 	"comet/internal/config"
+	"comet/internal/proxy"
 	"fmt"
 	"os"
 )
@@ -13,6 +14,11 @@ func LogError(err error) {
 
 func main() {
 	err := config.ReadConfig()
+	if err != nil {
+		LogError(err)
+	}
+
+	err = proxy.StartProxy()
 	if err != nil {
 		LogError(err)
 	}

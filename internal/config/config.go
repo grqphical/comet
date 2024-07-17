@@ -11,6 +11,8 @@ type Backend struct {
 	HealthEndpoint string `mapstructure:"health_endpoint"`
 }
 
+var Backends []Backend
+
 func ReadConfig() error {
 	viper.SetConfigName("comet")
 	viper.SetConfigType("toml")
@@ -22,6 +24,11 @@ func ReadConfig() error {
 		} else {
 			return err
 		}
+	}
+
+	err = viper.UnmarshalKey("backends", &Backends)
+	if err != nil {
+		return err
 	}
 
 	return nil
