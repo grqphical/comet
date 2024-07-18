@@ -57,7 +57,12 @@ func (s *Server) StartServer() error {
 	http.HandleFunc("/", s.handleRequest)
 
 	go func() {
-		ticker := time.NewTicker(time.Second * 5)
+		duration := viper.GetInt("health_check_interval")
+		if duration == 0 {
+			return
+		}
+
+		ticker := time.NewTicker(time.Second * time.Duration(duration))
 		for range ticker.C {
 			for _, backend := range s.Handlers {
 				backend.CheckHealth()

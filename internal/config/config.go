@@ -14,6 +14,7 @@ type Backend struct {
 	Address        string   `mapstructure:"address"`
 	HealthEndpoint string   `mapstructure:"health_endpoint"`
 	HiddenRoutes   []string `mapstructure:"hidden_routes"`
+	CheckHealth    bool     `mapstructure:"check_health"`
 	// These fields should only be populated if the type is "staticfs"
 	Directory string `mapstructure:"directory"`
 }

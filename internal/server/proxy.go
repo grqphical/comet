@@ -120,6 +120,10 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) int {
 }
 
 func (p *Proxy) CheckHealth() {
+	if !p.backend.CheckHealth {
+		return
+	}
+
 	p.mu.Lock()
 
 	url, err := url.JoinPath(p.backend.Address, p.backend.HealthEndpoint)
