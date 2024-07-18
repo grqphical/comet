@@ -10,6 +10,11 @@ func matchRoute(pattern, path string) bool {
 		return true
 	}
 
+	// no ending slash was provided
+	if strings.Count(path, "/") == 1 {
+		path += "/"
+	}
+
 	patternParts := strings.Split(pattern, "/")
 	pathParts := strings.Split(path, "/")
 
@@ -29,6 +34,10 @@ func matchRoute(pattern, path string) bool {
 }
 
 func removeFilterPrefix(pattern, path string) (string, error) {
+	if strings.Count(path, "/") == 1 {
+		path += "/"
+	}
+
 	patternParts := strings.Split(pattern, "/")
 	pathParts := strings.Split(path, "/")
 	var resultParts []string

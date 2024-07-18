@@ -17,6 +17,7 @@ func TestMatchRoute(t *testing.T) {
 		{"/foo/bar", "/foo/bar", true},
 		{"/foo/bar", "/foo/baz", false},
 		{"/foo/*", "/bar/foo", false},
+		{"/foo/*", "/foo", true},
 	}
 
 	for _, test := range tests {
@@ -35,6 +36,7 @@ func TestRemoveFilterPrefix(t *testing.T) {
 		{"/foo", "/foo", "/"},
 		{"/foo/*", "/foo/baz", "/baz"},
 		{"/foo/bar", "/foo/bar", "/"},
+		{"/foo/*", "/foo", "/"},
 	}
 
 	for _, test := range tests {
