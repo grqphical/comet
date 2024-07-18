@@ -11,7 +11,6 @@ import (
 
 type Backend interface {
 	HandleRequest(http.ResponseWriter, *http.Request)
-	RouteFilter() string
 	CheckHealth()
 }
 
@@ -26,8 +25,10 @@ func NewServer() Server {
 		switch backend.Type {
 		case "proxy":
 			servers[backend.RouteFilter] = newProxy(&backend)
+		case "staticfs":
+			servers[backend.RouteFilter] = newStaticFS(&backend)
 		default:
-			logging.Logger.Error("unknown type defined in configuration. Valid types are proxy and staticfs")
+			logging.Logger.Warn("unknown type defined in configuration, ignoring backend")
 		}
 	}
 
@@ -37,8 +38,8 @@ func NewServer() Server {
 }
 
 func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
-	for _, backend := range s.Backends {
-		if matchRoute(backend.RouteFilter(), r.URL.RequestURI()) {
+	for filter, backend := range s.Backends {
+		if matchRoute(filter, r.URL.RequestURI()) {
 			backend.HandleRequest(w, r)
 			return
 		}
@@ -58,6 +59,8 @@ func (s *Server) StartServer() error {
 			}
 		}
 	}()
+
+	logging.Logger.Info("starting server", "address", viper.GetString("proxy_address"))
 
 	return http.ListenAndServe(viper.GetString("proxy_address"), nil)
 }

@@ -44,37 +44,34 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 	var URL string
 
-	for _, backend := range config.Backends {
-		if backend.Address == "" {
-			logging.Logger.Warn("backend has no configured address")
-			continue
-		}
+	if p.backend.Address == "" {
+		logging.Logger.Warn("backend has no configured address")
+	}
 
-		p.mu.Lock()
-		if !p.serverStatuses[backend.Address] {
-			p.mu.Unlock()
-			http.Error(w, "backend not avaliable", http.StatusServiceUnavailable)
-			return
-		}
+	p.mu.Lock()
+	if !p.serverStatuses[p.backend.Address] {
 		p.mu.Unlock()
+		http.Error(w, "backend not avaliable", http.StatusServiceUnavailable)
+		return
+	}
+	p.mu.Unlock()
 
-		if matchRoute(backend.RouteFilter, r.URL.RequestURI()) {
-			var route string
-			var err error
+	if matchRoute(p.backend.RouteFilter, r.URL.RequestURI()) {
+		var route string
+		var err error
 
-			if backend.StripFilter {
-				route, err = removeFilterPrefix(backend.RouteFilter, r.URL.RequestURI())
-				if err != nil {
-					logging.LogCritical("invalid URL filter")
-				}
-			} else {
-				route = r.URL.RequestURI()
-			}
-
-			URL, err = url.JoinPath(backend.Address, route)
+		if p.backend.StripFilter {
+			route, err = removeFilterPrefix(p.backend.RouteFilter, r.URL.RequestURI())
 			if err != nil {
 				logging.LogCritical("invalid URL filter")
 			}
+		} else {
+			route = r.URL.RequestURI()
+		}
+
+		URL, err = url.JoinPath(p.backend.Address, route)
+		if err != nil {
+			logging.LogCritical("invalid URL filter")
 		}
 	}
 
@@ -113,10 +110,6 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		logging.Logger.Info("proxy", "method", r.Method, "status", resp.StatusCode, "route", r.RequestURI, "ip", r.RemoteAddr, "responseTime", responseTime.Microseconds())
 	}
 
-}
-
-func (p *Proxy) RouteFilter() string {
-	return p.backend.RouteFilter
 }
 
 func (p *Proxy) CheckHealth() {
