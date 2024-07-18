@@ -11,8 +11,9 @@ type Backend struct {
 	RouteFilter string `mapstructure:"route_filter"`
 	StripFilter bool   `mapstructure:"strip_filter"`
 	// These fields should only be populated if the type is "proxy"
-	Address        string `mapstructure:"address"`
-	HealthEndpoint string `mapstructure:"health_endpoint"`
+	Address        string   `mapstructure:"address"`
+	HealthEndpoint string   `mapstructure:"health_endpoint"`
+	HiddenRoutes   []string `mapstructure:"hidden_routes"`
 	// These fields should only be populated if the type is "staticfs"
 	Directory string `mapstructure:"directory"`
 }

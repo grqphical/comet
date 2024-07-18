@@ -9,17 +9,17 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Backend interface {
+type Handler interface {
 	HandleRequest(http.ResponseWriter, *http.Request)
 	CheckHealth()
 }
 
 type Server struct {
-	Backends map[string]Backend
+	Handlers map[string]Handler
 }
 
 func NewServer() Server {
-	servers := make(map[string]Backend)
+	servers := make(map[string]Handler)
 
 	for _, backend := range config.Backends {
 		switch backend.Type {
@@ -33,12 +33,12 @@ func NewServer() Server {
 	}
 
 	return Server{
-		Backends: servers,
+		Handlers: servers,
 	}
 }
 
 func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
-	for filter, backend := range s.Backends {
+	for filter, backend := range s.Handlers {
 		if matchRoute(filter, r.URL.RequestURI()) {
 			backend.HandleRequest(w, r)
 			return
@@ -54,7 +54,7 @@ func (s *Server) StartServer() error {
 	go func() {
 		ticker := time.NewTicker(time.Second * 15)
 		for range ticker.C {
-			for _, backend := range s.Backends {
+			for _, backend := range s.Handlers {
 				backend.CheckHealth()
 			}
 		}

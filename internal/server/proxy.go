@@ -69,6 +69,13 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) {
 			route = r.URL.RequestURI()
 		}
 
+		for _, hiddenRoute := range p.backend.HiddenRoutes {
+			if matchRoute(hiddenRoute, route) {
+				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+		}
+
 		URL, err = url.JoinPath(p.backend.Address, route)
 		if err != nil {
 			logging.LogCritical("invalid URL filter")
