@@ -53,7 +53,7 @@ func removeFilterPrefix(pattern, path string) (string, error) {
 
 	for i := range patternParts {
 		if patternParts[i] == "*" {
-			resultParts = append(resultParts, pathParts[i])
+			resultParts = append(resultParts, pathParts[i:]...)
 		}
 	}
 

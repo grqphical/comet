@@ -3,6 +3,7 @@ package server
 import (
 	"comet/internal/config"
 	"comet/internal/logging"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -75,6 +76,7 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) int {
 	}
 
 	URL = p.backend.Address + route
+	fmt.Println(URL)
 
 	// no URL matched the request
 	if URL == "" {
