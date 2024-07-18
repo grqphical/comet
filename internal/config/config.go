@@ -21,7 +21,28 @@ type Backend struct {
 
 var Backends []Backend
 
+func loadDefaults() {
+	viper.SetDefault("proxy_address", ":8000")
+	viper.SetDefault("log_requests", true)
+	viper.SetDefault("check_health_interval", 0)
+
+	viper.SetDefault("backend", []Backend{})
+
+	viper.SetDefault("ip_filter", map[string]interface{}{
+		"blacklist": []string{},
+	})
+
+	viper.SetDefault("logging", map[string]interface{}{
+		"output": "stderr",
+		"level":  "info",
+	})
+
+	viper.SetDefault("cors", map[string]interface{}{})
+
+}
+
 func ReadConfig() error {
+	loadDefaults()
 	viper.SetConfigName("comet")
 	viper.SetConfigType("toml")
 	viper.AddConfigPath(".")
