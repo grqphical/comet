@@ -13,8 +13,8 @@ type Backend struct {
 	// These fields should only be populated if the type is "proxy"
 	Address        string   `mapstructure:"address"`
 	HealthEndpoint string   `mapstructure:"health_endpoint"`
-	HiddenRoutes   []string `mapstructure:"hidden_routes"`
 	CheckHealth    bool     `mapstructure:"check_health"`
+	HiddenRoutes   []string `mapstructure:"hidden_routes"`
 	// These fields should only be populated if the type is "staticfs"
 	Directory string `mapstructure:"directory"`
 }

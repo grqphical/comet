@@ -3,7 +3,6 @@ package server
 import (
 	"comet/internal/config"
 	"comet/internal/logging"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -51,48 +50,39 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) int {
 	p.mu.Lock()
 	if !p.serverStatuses[p.backend.Address] {
 		p.mu.Unlock()
-		http.Error(w, "backend not avaliable", http.StatusServiceUnavailable)
+
+		sendError(503, w)
 		return 503
 	}
 	p.mu.Unlock()
-
-	fmt.Println(r.URL.RequestURI())
 
 	var route string
 	var err error
 
 	if p.backend.StripFilter {
-		route, err = removeFilterPrefix(p.backend.RouteFilter, r.URL.RequestURI())
-		if err != nil {
-			logging.LogCritical("invalid URL filter")
-		}
+		route, _ = removeFilterPrefix(p.backend.RouteFilter, r.URL.RequestURI())
 	} else {
 		route = r.URL.RequestURI()
 	}
 
 	for _, hiddenRoute := range p.backend.HiddenRoutes {
 		if matchRoute(hiddenRoute, route) {
-			http.Error(w, "forbidden", http.StatusForbidden)
+			sendError(403, w)
 			return 403
 		}
 	}
 
 	URL = p.backend.Address + route
-	if err != nil {
-		logging.LogCritical("invalid URL filter")
-	}
 
 	// no URL matched the request
 	if URL == "" {
-		http.Error(w, "NOT FOUND", http.StatusNotFound)
+		sendError(404, w)
 		return 404
 	}
 
 	request, err := http.NewRequest(r.Method, URL, nil)
 	if err != nil {
-		http.Error(w, "Unable to access backend server", http.StatusInternalServerError)
-		return 500
-
+		sendError(500, w)
 	}
 
 	request.Header.Add("X-Forwarded-For", r.RemoteAddr)
@@ -100,7 +90,7 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) int {
 
 	resp, err := http.DefaultClient.Do(request)
 	if err != nil {
-		http.Error(w, "Unable to access backend server", http.StatusInternalServerError)
+		sendError(500, w)
 		return 500
 	}
 	defer resp.Body.Close()
@@ -115,7 +105,7 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) int {
 
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
-		http.Error(w, "Unable to send response data", http.StatusInternalServerError)
+		sendError(500, w)
 		return 500
 	}
 
