@@ -4,8 +4,10 @@ import (
 	"comet/internal/config"
 	"comet/internal/logging"
 	"io"
+	"mime"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 type StaticFS struct {
@@ -33,11 +35,15 @@ func (s *StaticFS) HandleRequest(w http.ResponseWriter, r *http.Request) int {
 		logging.LogCritical("invalid route filter")
 	}
 
+	mimeType := mime.TypeByExtension(filepath.Ext(fileName))
+
 	file, err := s.directory.Open(fileName)
 	if err != nil {
 		http.Error(w, "not found", http.StatusNotFound)
 		return 404
 	}
+
+	w.Header().Set("Content-Type", mimeType)
 
 	_, err = io.Copy(w, file)
 	if err != nil {

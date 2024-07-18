@@ -23,13 +23,16 @@ func newProxy(backend *config.Backend) *Proxy {
 	if err != nil {
 		logging.LogCritical("invalid address or health endpoint")
 	}
-	_, err = http.Get(url)
 
-	if err == nil {
-		serversStatus[backend.Address] = true
-	} else {
-		serversStatus[backend.Address] = false
-		logging.Logger.Warn("server offline", "address", backend.Address)
+	if backend.CheckHealth {
+		_, err = http.Get(url)
+
+		if err == nil {
+			serversStatus[backend.Address] = true
+		} else {
+			serversStatus[backend.Address] = false
+			logging.Logger.Warn("server offline", "address", backend.Address)
+		}
 	}
 
 	return &Proxy{
