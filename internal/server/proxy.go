@@ -32,6 +32,8 @@ func newProxy(backend *config.Backend) *Proxy {
 			serversStatus[backend.Address] = false
 			logging.Logger.Warn("server offline", "address", backend.Address)
 		}
+	} else {
+		serversStatus[backend.Address] = true
 	}
 
 	return &Proxy{

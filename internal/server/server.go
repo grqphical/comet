@@ -3,6 +3,7 @@ package server
 import (
 	"comet/internal/config"
 	"comet/internal/logging"
+	"net"
 	"net/http"
 	"time"
 
@@ -38,6 +39,21 @@ func NewServer() Server {
 }
 
 func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
+	for _, ip := range viper.GetStringSlice("ip_filter.blacklist") {
+		netIP, _, err := net.ParseCIDR(ip)
+		if err != nil {
+			logging.Logger.Warn("invalid ip in blacklist, ignoring")
+			continue
+		}
+
+		incomingIP, _, _ := net.ParseCIDR(r.RemoteAddr)
+
+		if net.IP.Equal(netIP, incomingIP) {
+			sendError(http.StatusForbidden, w)
+			return
+		}
+	}
+
 	for filter, backend := range s.Handlers {
 		if matchRoute(filter, r.URL.RequestURI()) {
 			startTime := time.Now()
