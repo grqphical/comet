@@ -12,6 +12,8 @@ func main() {
 		logging.LogCritical(err.Error())
 	}
 
+	logging.InitLogger()
+
 	p := server.NewServer()
 
 	err = p.StartServer()

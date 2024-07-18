@@ -18,11 +18,13 @@ func TestMatchRoute(t *testing.T) {
 		{"/foo/bar", "/foo/baz", false},
 		{"/foo/*", "/bar/foo", false},
 		{"/foo/*", "/foo", true},
+		{"/foo/*", "/foo?foo=bar", true},
+		{"/foo", "/foo?foo=bar", true},
 	}
 
 	for _, test := range tests {
 		result := matchRoute(test.pattern, test.path)
-		assert.Equal(t, test.matches, result)
+		assert.Equal(t, test.matches, result, test.path, test.pattern)
 	}
 }
 
@@ -37,11 +39,12 @@ func TestRemoveFilterPrefix(t *testing.T) {
 		{"/foo/*", "/foo/baz", "/baz"},
 		{"/foo/bar", "/foo/bar", "/"},
 		{"/foo/*", "/foo", "/"},
+		{"/foo/*", "/foo?foo=bar", "?foo=bar"},
 	}
 
 	for _, test := range tests {
 		result, err := removeFilterPrefix(test.pattern, test.path)
 		assert.NoError(t, err)
-		assert.Equal(t, test.result, result)
+		assert.Equal(t, test.result, result, test.path, test.pattern)
 	}
 }

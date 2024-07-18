@@ -28,14 +28,13 @@ func getSlogLevelFromString() (slog.Level, error) {
 	}
 }
 
-func init() {
+func InitLogger() {
 	err := config.ReadConfig()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "unable to read config")
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	output := viper.GetString("logging.output")
-	fmt.Println(output)
 	var logOutput io.Writer
 
 	switch output {

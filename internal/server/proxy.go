@@ -3,6 +3,7 @@ package server
 import (
 	"comet/internal/config"
 	"comet/internal/logging"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -52,30 +53,30 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) int {
 	}
 	p.mu.Unlock()
 
-	if matchRoute(p.backend.RouteFilter, r.URL.RequestURI()) {
-		var route string
-		var err error
+	fmt.Println(r.URL.RequestURI())
 
-		if p.backend.StripFilter {
-			route, err = removeFilterPrefix(p.backend.RouteFilter, r.URL.RequestURI())
-			if err != nil {
-				logging.LogCritical("invalid URL filter")
-			}
-		} else {
-			route = r.URL.RequestURI()
-		}
+	var route string
+	var err error
 
-		for _, hiddenRoute := range p.backend.HiddenRoutes {
-			if matchRoute(hiddenRoute, route) {
-				http.Error(w, "forbidden", http.StatusForbidden)
-				return 403
-			}
-		}
-
-		URL, err = url.JoinPath(p.backend.Address, route)
+	if p.backend.StripFilter {
+		route, err = removeFilterPrefix(p.backend.RouteFilter, r.URL.RequestURI())
 		if err != nil {
 			logging.LogCritical("invalid URL filter")
 		}
+	} else {
+		route = r.URL.RequestURI()
+	}
+
+	for _, hiddenRoute := range p.backend.HiddenRoutes {
+		if matchRoute(hiddenRoute, route) {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return 403
+		}
+	}
+
+	URL = p.backend.Address + route
+	if err != nil {
+		logging.LogCritical("invalid URL filter")
 	}
 
 	// no URL matched the request
@@ -84,7 +85,17 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) int {
 		return 404
 	}
 
-	resp, err := http.Get(URL)
+	request, err := http.NewRequest(r.Method, URL, nil)
+	if err != nil {
+		http.Error(w, "Unable to access backend server", http.StatusInternalServerError)
+		return 500
+
+	}
+
+	request.Header.Add("X-Forwarded-For", r.RemoteAddr)
+	request.Header.Add("X-Forwarded-Host", r.Host)
+
+	resp, err := http.DefaultClient.Do(request)
 	if err != nil {
 		http.Error(w, "Unable to access backend server", http.StatusInternalServerError)
 		return 500
@@ -96,9 +107,6 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) int {
 			w.Header().Add(key, val)
 		}
 	}
-
-	w.Header().Add("X-Forwarded-For", r.RemoteAddr)
-	w.Header().Add("X-Forwarded-Host", r.URL.RawPath)
 
 	w.WriteHeader(resp.StatusCode)
 

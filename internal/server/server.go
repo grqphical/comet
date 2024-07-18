@@ -57,7 +57,7 @@ func (s *Server) StartServer() error {
 	http.HandleFunc("/", s.handleRequest)
 
 	go func() {
-		ticker := time.NewTicker(time.Second * 15)
+		ticker := time.NewTicker(time.Second * 5)
 		for range ticker.C {
 			for _, backend := range s.Handlers {
 				backend.CheckHealth()

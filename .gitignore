@@ -2,3 +2,4 @@ main
 .env
 *.toml
 test/
+test_server.py
