@@ -27,7 +27,7 @@ func newStaticFS(backend *config.Backend) *StaticFS {
 	}
 }
 
-func (s *StaticFS) HandleRequest(w http.ResponseWriter, r *http.Request) {
+func (s *StaticFS) HandleRequest(w http.ResponseWriter, r *http.Request) int {
 	fileName, err := removeFilterPrefix(s.backend.RouteFilter, r.URL.RequestURI())
 	if err != nil {
 		logging.LogCritical("invalid route filter")
@@ -36,14 +36,16 @@ func (s *StaticFS) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	file, err := s.directory.Open(fileName)
 	if err != nil {
 		http.Error(w, "not found", http.StatusNotFound)
-		return
+		return 404
 	}
 
 	_, err = io.Copy(w, file)
 	if err != nil {
 		http.Error(w, "unable to read file data", http.StatusInternalServerError)
-		return
+		return 500
 	}
+
+	return 200
 }
 
 // since there is no health to check this function is a no op

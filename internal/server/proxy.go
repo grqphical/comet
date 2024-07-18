@@ -7,9 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
-	"time"
-
-	"github.com/spf13/viper"
 )
 
 type Proxy struct {
@@ -40,8 +37,7 @@ func newProxy(backend *config.Backend) *Proxy {
 	}
 }
 
-func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) {
-	startTime := time.Now()
+func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) int {
 	var URL string
 
 	if p.backend.Address == "" {
@@ -52,7 +48,7 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	if !p.serverStatuses[p.backend.Address] {
 		p.mu.Unlock()
 		http.Error(w, "backend not avaliable", http.StatusServiceUnavailable)
-		return
+		return 503
 	}
 	p.mu.Unlock()
 
@@ -72,7 +68,7 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		for _, hiddenRoute := range p.backend.HiddenRoutes {
 			if matchRoute(hiddenRoute, route) {
 				http.Error(w, "forbidden", http.StatusForbidden)
-				return
+				return 403
 			}
 		}
 
@@ -85,13 +81,13 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	// no URL matched the request
 	if URL == "" {
 		http.Error(w, "NOT FOUND", http.StatusNotFound)
-		return
+		return 404
 	}
 
 	resp, err := http.Get(URL)
 	if err != nil {
 		http.Error(w, "Unable to access backend server", http.StatusInternalServerError)
-		return
+		return 500
 	}
 	defer resp.Body.Close()
 
@@ -109,14 +105,10 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) {
 	_, err = io.Copy(w, resp.Body)
 	if err != nil {
 		http.Error(w, "Unable to send response data", http.StatusInternalServerError)
-		return
-	}
-	responseTime := time.Since(startTime)
-
-	if viper.GetBool("log_requests") {
-		logging.Logger.Info("proxy", "method", r.Method, "status", resp.StatusCode, "route", r.RequestURI, "ip", r.RemoteAddr, "responseTime", responseTime.Microseconds())
+		return 500
 	}
 
+	return resp.StatusCode
 }
 
 func (p *Proxy) CheckHealth() {

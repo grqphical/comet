@@ -10,7 +10,7 @@ import (
 )
 
 type Handler interface {
-	HandleRequest(http.ResponseWriter, *http.Request)
+	HandleRequest(http.ResponseWriter, *http.Request) int
 	CheckHealth()
 }
 
@@ -40,7 +40,12 @@ func NewServer() Server {
 func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 	for filter, backend := range s.Handlers {
 		if matchRoute(filter, r.URL.RequestURI()) {
-			backend.HandleRequest(w, r)
+			startTime := time.Now()
+			status := backend.HandleRequest(w, r)
+			if viper.GetBool("log_requests") {
+				responseTime := time.Since(startTime)
+				logging.Logger.Info("proxy", "method", r.Method, "status", status, "route", r.RequestURI, "ip", r.RemoteAddr, "responseTime", responseTime.Microseconds())
+			}
 			return
 		}
 	}
