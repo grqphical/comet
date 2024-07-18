@@ -40,13 +40,8 @@ func NewServer() Server {
 
 func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 	for _, ip := range viper.GetStringSlice("ip_filter.blacklist") {
-		netIP, _, err := net.ParseCIDR(ip)
-		if err != nil {
-			logging.Logger.Warn("invalid ip in blacklist, ignoring")
-			continue
-		}
-
-		incomingIP, _, _ := net.ParseCIDR(r.RemoteAddr)
+		netIP := net.ParseIP(ip)
+		incomingIP := net.ParseIP(r.RemoteAddr)
 
 		if net.IP.Equal(netIP, incomingIP) {
 			sendError(http.StatusForbidden, w)
@@ -66,7 +61,7 @@ func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.Error(w, "not found", http.StatusNotFound)
+	sendError(http.StatusNotFound, w)
 }
 
 func (s *Server) StartServer() error {
