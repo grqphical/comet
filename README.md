@@ -33,7 +33,7 @@ hidden_routes = []
 [[backend]]
 type = "staticfs"
 route_filter = "/static/*"
-directory = "/home/grqphical/development/go/emoji_game/static"
+directory = "/foo/bar"
 
 
 [ip_filter]
