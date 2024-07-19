@@ -1,6 +1,7 @@
 package server
 
 import (
+	"comet/internal"
 	"comet/internal/config"
 	"comet/internal/logging"
 	"fmt"
@@ -76,7 +77,6 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) int {
 	}
 
 	URL = p.backend.Address + route
-	fmt.Println(URL)
 
 	// no URL matched the request
 	if URL == "" {
@@ -104,6 +104,8 @@ func (p *Proxy) HandleRequest(w http.ResponseWriter, r *http.Request) int {
 			w.Header().Add(key, val)
 		}
 	}
+
+	w.Header().Set("Server", fmt.Sprintf("Comet/%s Go/1.22.5", internal.Version))
 
 	w.WriteHeader(resp.StatusCode)
 

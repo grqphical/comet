@@ -1,8 +1,10 @@
 package server
 
 import (
+	"comet/internal"
 	"comet/internal/config"
 	"comet/internal/logging"
+	"fmt"
 	"io"
 	"mime"
 	"net/http"
@@ -41,6 +43,7 @@ func (s *StaticFS) HandleRequest(w http.ResponseWriter, r *http.Request) int {
 	}
 
 	w.Header().Set("Content-Type", mimeType)
+	w.Header().Set("Server", fmt.Sprintf("Comet/%s Go/1.22.5", internal.Version))
 
 	_, err = io.Copy(w, file)
 	if err != nil {
