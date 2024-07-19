@@ -1,5 +1,7 @@
 # comet - A reverse proxy made with Golang
 
+[![Go Tests](https://github.com/grqphical/comet/actions/workflows/go.yml/badge.svg)](https://github.com/grqphical/comet/actions/workflows/go.yml)
+
 Comet is a highly customizable reverse proxy that allows you to proxy requests and host static files.
 
 ## Installation
