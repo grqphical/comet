@@ -1,0 +1,96 @@
+{
+  "type": "object",
+  "properties": {
+    "proxy_address": {
+      "type": "string"
+    },
+    "log_requests": {
+      "type": "boolean"
+    },
+    "health_check_interval": {
+      "type": "integer"
+    },
+    "backend": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "route_filter": {
+            "type": "string"
+          },
+          "strip_filter": {
+            "type": "boolean"
+          },
+          "address": {
+            "type": "string"
+          },
+          "health_endpoint": {
+            "type": "string"
+          },
+          "check_health": {
+            "type": "boolean"
+          },
+          "hidden_routes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "directory": {
+            "type": "string"
+          }
+        },
+        "required": ["type", "route_filter", "strip_filter"]
+      }
+    },
+    "ip_filter": {
+      "type": "object",
+      "properties": {
+        "blacklist": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        }
+      }
+    },
+    "cors": {
+      "type": "object",
+      "properties": {
+        "allowed_origins": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowed_methods": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowed_headers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": ["proxy_address", "log_requests", "health_check_interval"]
+}
