@@ -52,6 +52,9 @@ func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 	for filter, backend := range s.Handlers {
 		if matchRoute(filter, r.URL.RequestURI()) {
 			startTime := time.Now()
+
+			s.handleCORS(w, r.Method)
+
 			status := backend.HandleRequest(w, r)
 			if viper.GetBool("log_requests") {
 				responseTime := time.Since(startTime)
@@ -62,6 +65,34 @@ func (s *Server) handleRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sendError(http.StatusNotFound, w)
+}
+
+func (s *Server) handleCORS(w http.ResponseWriter, method string) {
+	if cors := viper.GetStringMapStringSlice("cors"); cors != nil {
+		origins, ok := cors["allowed_origins"]
+		if ok {
+			for _, o := range origins {
+				w.Header().Add("Access-Control-Allow-Origin", o)
+			}
+		}
+
+		methods, ok := cors["allowed_methods"]
+		if ok && method == "OPTIONS" {
+			for _, m := range methods {
+				w.Header().Add("Access-Control-Allow-Methods", m)
+			}
+		}
+
+		headers, ok := cors["allowed_headers"]
+		if ok {
+			for _, h := range headers {
+				if method == "OPTIONS" {
+					w.Header().Add("Access-Control-Allow-Headers", h)
+				}
+				w.Header().Add("Access-Control-Expose-Headers", h)
+			}
+		}
+	}
 }
 
 func (s *Server) StartServer() error {
